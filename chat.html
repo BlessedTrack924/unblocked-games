@@ -15,20 +15,21 @@
 
         body {
             margin: 0;
-            background: #0f0f0f;
+            background: #0d0d0d;
             color: white;
             font-family: Arial, sans-serif;
         }
 
         header {
-            background: #181818;
-            padding: 20px;
+            background: #171717;
+            padding: 22px;
             text-align: center;
             border-bottom: 1px solid #333;
         }
 
         header h1 {
             margin: 0;
+            font-size: 30px;
         }
 
         .back {
@@ -46,6 +47,7 @@
             width: 95%;
             max-width: 700px;
             height: 70vh;
+            min-height: 400px;
             margin: 20px auto;
             background: #181818;
             border: 1px solid #333;
@@ -62,7 +64,7 @@
         }
 
         .message {
-            background: #242424;
+            background: #252525;
             padding: 10px;
             margin-bottom: 8px;
             border-radius: 8px;
@@ -74,10 +76,24 @@
             color: #aaa;
         }
 
+        .system {
+            color: #777;
+            text-align: center;
+            padding: 20px;
+        }
+
+        #status {
+            padding: 8px;
+            text-align: center;
+            font-size: 13px;
+            color: #777;
+            border-top: 1px solid #292929;
+        }
+
         .input-area {
             display: flex;
-            padding: 10px;
             gap: 8px;
+            padding: 10px;
             border-top: 1px solid #333;
         }
 
@@ -91,7 +107,7 @@
         }
 
         #username {
-            width: 30%;
+            width: 28%;
         }
 
         #message {
@@ -107,11 +123,22 @@
             cursor: pointer;
         }
 
-        #status {
-            text-align: center;
-            color: #777;
-            font-size: 13px;
-            padding: 8px;
+        button:active {
+            background: #444;
+        }
+
+        @media (max-width: 500px) {
+            .input-area {
+                flex-wrap: wrap;
+            }
+
+            #username {
+                width: 100%;
+            }
+
+            #message {
+                width: 70%;
+            }
         }
     </style>
 </head>
@@ -122,48 +149,54 @@
     <h1>💬 Pixel Vault Chat</h1>
 </header>
 
-<a class="back" href="index.html">← Back to Games</a>
+<a class="back" href="index.html">
+    ← Back to Games
+</a>
 
 <div class="chat">
 
-    <div id="messages"></div>
+    <div id="messages">
+        <div class="system">
+            Loading chat...
+        </div>
+    </div>
 
-    <div id="status">Connecting...</div>
+    <div id="status">
+        Connecting...
+    </div>
 
     <div class="input-area">
 
         <input
             id="username"
             type="text"
-            placeholder="Username"
             maxlength="20"
+            placeholder="Username"
         >
 
         <input
             id="message"
             type="text"
-            placeholder="Message..."
             maxlength="200"
+            placeholder="Type a message..."
         >
 
-        <button onclick="sendMessage()">Send</button>
+        <button onclick="sendMessage()">
+            Send
+        </button>
 
     </div>
 
 </div>
 
 <script>
+
     const SUPABASE_URL =
         "https://gjpjcvxxsrbpquesfrbp.supabase.co";
 
     const SUPABASE_KEY =
         "sb_publishable__419UIyCwOG8YovoN5mNww_BBkwkQrh";
 
-    const supabaseClient =
-        supabase.createClient(
-            SUPABASE_URL,
-            SUPABASE_KEY
-        );
 
     const messagesBox =
         document.getElementById("messages");
@@ -172,40 +205,31 @@
         document.getElementById("status");
 
 
-    async function loadMessages() {
+    let supabaseClient;
 
-        const { data, error } =
-            await supabaseClient
-                .from("pixelvault")
-                .select("*")
-                .order("created_at", {
-                    ascending: true
-                });
 
-        if (error) {
-            console.error(error);
-            statusBox.textContent =
-                "Could not load messages.";
-            return;
-        }
+    function showSystemMessage(text) {
 
         messagesBox.innerHTML = "";
 
-        data.forEach(addMessage);
+        const message =
+            document.createElement("div");
 
-        messagesBox.scrollTop =
-            messagesBox.scrollHeight;
+        message.className = "system";
 
-        statusBox.textContent = "Connected";
+        message.textContent = text;
+
+        messagesBox.appendChild(message);
     }
 
 
-    function addMessage(message) {
+    function addMessage(data) {
 
-        const div =
+        const message =
             document.createElement("div");
 
-        div.className = "message";
+        message.className = "message";
+
 
         const username =
             document.createElement("span");
@@ -213,21 +237,87 @@
         username.className = "username";
 
         username.textContent =
-            message.username + ": ";
+            data.username + ": ";
+
 
         const text =
             document.createElement("span");
 
         text.textContent =
-            message.message;
+            data.message;
 
-        div.appendChild(username);
-        div.appendChild(text);
 
-        messagesBox.appendChild(div);
+        message.appendChild(username);
+
+        message.appendChild(text);
+
+        messagesBox.appendChild(message);
 
         messagesBox.scrollTop =
             messagesBox.scrollHeight;
+    }
+
+
+    async function loadMessages() {
+
+        try {
+
+            const result =
+                await supabaseClient
+                    .from("pixelvault")
+                    .select("*")
+                    .order("created_at", {
+                        ascending: true
+                    });
+
+
+            if (result.error) {
+
+                console.error(result.error);
+
+                showSystemMessage(
+                    "Chat database error: " +
+                    result.error.message
+                );
+
+                statusBox.textContent =
+                    "Database connection failed.";
+
+                return;
+            }
+
+
+            messagesBox.innerHTML = "";
+
+
+            if (!result.data ||
+                result.data.length === 0) {
+
+                showSystemMessage(
+                    "No messages yet. Be the first!"
+                );
+
+            } else {
+
+                result.data.forEach(addMessage);
+
+            }
+
+
+            statusBox.textContent =
+                "Connected";
+
+        } catch (error) {
+
+            console.error(error);
+
+            showSystemMessage(
+                "Could not connect to chat."
+            );
+
+            statusBox.textContent =
+                "Connection error.";
+        }
     }
 
 
@@ -245,45 +335,135 @@
                 .value
                 .trim();
 
-        if (!username || !message) {
+
+        if (!username) {
+
+            statusBox.textContent =
+                "Enter a username first.";
+
             return;
         }
 
-        const { error } =
-            await supabaseClient
-                .from("pixelvault")
-                .insert({
-                    username: username,
-                    message: message
-                });
 
-        if (error) {
+        if (!message) {
+
+            return;
+        }
+
+
+        statusBox.textContent =
+            "Sending...";
+
+
+        try {
+
+            const result =
+                await supabaseClient
+                    .from("pixelvault")
+                    .insert({
+                        username: username,
+                        message: message
+                    });
+
+
+            if (result.error) {
+
+                console.error(result.error);
+
+                statusBox.textContent =
+                    "Send failed: " +
+                    result.error.message;
+
+                return;
+            }
+
+
+            document
+                .getElementById("message")
+                .value = "";
+
+
+            statusBox.textContent =
+                "Connected";
+
+
+        } catch (error) {
+
             console.error(error);
 
             statusBox.textContent =
-                "Message failed to send.";
-
-            return;
+                "Something went wrong.";
         }
-
-        document.getElementById("message").value = "";
     }
 
 
-    supabaseClient
-        .channel("pixelvault-chat")
-        .on(
-            "postgres_changes",
-            {
-                event: "INSERT",
-                schema: "public",
-                table: "pixelvault"
-            },
-            payload => {
-                addMessage(payload.new);
+    function startChat() {
+
+        try {
+
+            if (!window.supabase) {
+
+                showSystemMessage(
+                    "Supabase library did not load."
+                );
+
+                statusBox.textContent =
+                    "Connection error.";
+
+                return;
             }
-        )
-        .subscribe();
+
+
+            supabaseClient =
+                window.supabase.createClient(
+                    SUPABASE_URL,
+                    SUPABASE_KEY
+                );
+
+
+            loadMessages();
+
+
+            supabaseClient
+                .channel("pixelvault-chat")
+                .on(
+                    "postgres_changes",
+                    {
+                        event: "INSERT",
+                        schema: "public",
+                        table: "pixelvault"
+                    },
+                    function(payload) {
+
+                        addMessage(payload.new);
+
+                    }
+                )
+                .subscribe(
+                    function(status) {
+
+                        console.log(
+                            "Realtime:",
+                            status
+                        );
+
+                    }
+                );
+
+
+        } catch (error) {
+
+            console.error(error);
+
+            showSystemMessage(
+                "Chat failed to start: " +
+                error.message
+            );
+
+            statusBox.textContent =
+                "Error.";
+        }
+    }
 
 
     document
@@ -293,14 +473,17 @@
             function(event) {
 
                 if (event.key === "Enter") {
+
                     sendMessage();
+
                 }
 
             }
         );
 
 
-    loadMessages();
+    startChat();
+
 </script>
 
 </body>

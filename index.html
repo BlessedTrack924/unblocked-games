@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Vault</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #0f0f0f;
+            color: white;
+        }
+
+        header {
+            background: #181818;
+            padding: 25px 15px;
+            text-align: center;
+            border-bottom: 1px solid #333;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 34px;
+        }
+
+        header p {
+            color: #999;
+            margin: 8px 0 0;
+        }
+
+        .search {
+            padding: 20px;
+            text-align: center;
+        }
+
+        #searchBar {
+            width: 90%;
+            max-width: 600px;
+            padding: 15px;
+            border: 1px solid #333;
+            border-radius: 10px;
+            background: #1c1c1c;
+            color: white;
+            font-size: 16px;
+            outline: none;
+        }
+
+        .categories {
+            display: flex;
+            gap: 10px;
+            padding: 0 20px 20px;
+            overflow-x: auto;
+        }
+
+        .category {
+            background: #1c1c1c;
+            border: 1px solid #333;
+            color: white;
+            padding: 10px 16px;
+            border-radius: 20px;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+
+        .category:active {
+            background: #333;
+        }
+
+        main {
+            padding: 20px;
+        }
+
+        .games {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+            gap: 18px;
+        }
+
+        .game {
+            background: #191919;
+            border: 1px solid #303030;
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .game-image {
+            height: 120px;
+            background: #252525;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 45px;
+        }
+
+        .game-info {
+            padding: 12px;
+        }
+
+        .game-info h3 {
+            margin: 0 0 5px;
+            font-size: 17px;
+        }
+
+        .game-info p {
+            margin: 0;
+            color: #888;
+            font-size: 14px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 35px 20px;
+            color: #666;
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>🎮 Pixel Vault</h1>
+    <p>Your game hub</p>
+</header>
+
+<div class="search">
+    <input
+        id="searchBar"
+        type="text"
+        placeholder="Search games..."
+        oninput="searchGames()"
+    >
+</div>
+
+<div class="categories">
+    <button class="category" onclick="filterGames('all')">All</button>
+    <button class="category" onclick="filterGames('action')">Action</button>
+    <button class="category" onclick="filterGames('arcade')">Arcade</button>
+    <button class="category" onclick="filterGames('racing')">Racing</button>
+    <button class="category" onclick="filterGames('puzzle')">Puzzle</button>
+</div>
+
+<main>
+    <div class="games">
+
+        <div class="game"
+             data-category="action"
+             data-name="Example Action Game">
+            <div class="game-image">⚔️</div>
+            <div class="game-info">
+                <h3>Example Action Game</h3>
+                <p>Action</p>
+            </div>
+        </div>
+
+        <div class="game"
+             data-category="arcade"
+             data-name="Example Arcade Game">
+            <div class="game-image">👾</div>
+            <div class="game-info">
+                <h3>Example Arcade Game</h3>
+                <p>Arcade</p>
+            </div>
+        </div>
+
+        <div class="game"
+             data-category="racing"
+             data-name="Example Racing Game">
+            <div class="game-image">🏎️</div>
+            <div class="game-info">
+                <h3>Example Racing Game</h3>
+                <p>Racing</p>
+            </div>
+        </div>
+
+        <div class="game"
+             data-category="puzzle"
+             data-name="Example Puzzle Game">
+            <div class="game-image">🧩</div>
+            <div class="game-info">
+                <h3>Example Puzzle Game</h3>
+                <p>Puzzle</p>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<footer>
+    Pixel Vault © 2026
+</footer>
+
+<script>
+    function searchGames() {
+        const search = document
+            .getElementById("searchBar")
+            .value
+            .toLowerCase();
+
+        const games = document.querySelectorAll(".game");
+
+        games.forEach(game => {
+            const name = game.dataset.name.toLowerCase();
+
+            if (name.includes(search)) {
+                game.style.display = "block";
+            } else {
+                game.style.display = "none";
+            }
+        });
+    }
+
+    function filterGames(category) {
+        const games = document.querySelectorAll(".game");
+
+        games.forEach(game => {
+            if (
+                category === "all" ||
+                game.dataset.category === category
+            ) {
+                game.style.display = "block";
+            } else {
+                game.style.display = "none";
+            }
+        });
+    }
+</script>
+
+</body>
+</html>

@@ -6,6 +6,8 @@
 
     <title>Pixel Vault Chat</title>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <style>
         * {
             box-sizing: border-box;
@@ -64,6 +66,7 @@
             padding: 10px;
             margin-bottom: 8px;
             border-radius: 8px;
+            word-wrap: break-word;
         }
 
         .username {
@@ -78,8 +81,7 @@
             border-top: 1px solid #333;
         }
 
-        #username,
-        #message {
+        input {
             background: #222;
             color: white;
             border: 1px solid #444;
@@ -108,6 +110,13 @@
         button:active {
             background: #444;
         }
+
+        #status {
+            text-align: center;
+            color: #777;
+            font-size: 13px;
+            padding-bottom: 8px;
+        }
     </style>
 </head>
 
@@ -121,12 +130,9 @@
 
 <div class="chat">
 
-    <div id="messages">
-        <div class="message">
-            <span class="username">System:</span>
-            Welcome to Pixel Vault Chat!
-        </div>
-    </div>
+    <div id="messages"></div>
+
+    <div id="status">Connecting...</div>
 
     <div class="input-area">
 
@@ -151,7 +157,62 @@
 </div>
 
 <script>
-    function sendMessage() {
+    const SUPABASE_URL = "https://gjpjcvxxsrbpquesfrbp.supabase.co";
+
+    const SUPABASE_KEY = "PASTE_YOUR_PUBLISHABLE_KEY_HERE";
+
+    const supabaseClient = supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+    );
+
+    const messagesBox = document.getElementById("messages");
+    const statusBox = document.getElementById("status");
+
+    async function loadMessages() {
+
+        const { data, error } = await supabaseClient
+            .from("pixelvault")
+            .select("*")
+            .order("created_at", { ascending: true });
+
+        if (error) {
+            console.error(error);
+            statusBox.textContent = "Could not load messages.";
+            return;
+        }
+
+        messagesBox.innerHTML = "";
+
+        data.forEach(addMessage);
+
+        messagesBox.scrollTop = messagesBox.scrollHeight;
+
+        statusBox.textContent = "Connected";
+    }
+
+    function addMessage(message) {
+
+        const div = document.createElement("div");
+
+        div.className = "message";
+
+        const username = document.createElement("span");
+        username.className = "username";
+        username.textContent = message.username + ": ";
+
+        const text = document.createElement("span");
+        text.textContent = message.message;
+
+        div.appendChild(username);
+        div.appendChild(text);
+
+        messagesBox.appendChild(div);
+
+        messagesBox.scrollTop = messagesBox.scrollHeight;
+    }
+
+    async function sendMessage() {
 
         const username =
             document.getElementById("username").value.trim();
@@ -163,34 +224,39 @@
             return;
         }
 
-        const messages =
-            document.getElementById("messages");
+        const { error } = await supabaseClient
+            .from("pixelvault")
+            .insert({
+                username: username,
+                message: message
+            });
 
-        const newMessage =
-            document.createElement("div");
-
-        newMessage.className = "message";
-
-        newMessage.innerHTML =
-            "<span class='username'>" +
-            escapeHTML(username) +
-            ":</span> " +
-            escapeHTML(message);
-
-        messages.appendChild(newMessage);
-
-        messages.scrollTop = messages.scrollHeight;
+        if (error) {
+            console.error(error);
+            statusBox.textContent = "Message failed to send.";
+            return;
+        }
 
         document.getElementById("message").value = "";
     }
 
-    function escapeHTML(text) {
-        const div = document.createElement("div");
-        div.textContent = text;
-        return div.innerHTML;
-    }
+    supabaseClient
+        .channel("pixelvault-chat")
+        .on(
+            "postgres_changes",
+            {
+                event: "INSERT",
+                schema: "public",
+                table: "pixelvault"
+            },
+            payload => {
+                addMessage(payload.new);
+            }
+        )
+        .subscribe();
 
-    document.getElementById("message")
+    document
+        .getElementById("message")
         .addEventListener("keydown", function(event) {
 
             if (event.key === "Enter") {
@@ -198,6 +264,8 @@
             }
 
         });
+
+    loadMessages();
 </script>
 
 </body>
